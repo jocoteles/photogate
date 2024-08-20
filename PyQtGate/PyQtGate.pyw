@@ -6,18 +6,27 @@
 import debug	#python debuger routines (see debug.py for instructions)
 
 import os, sys
+import time
 import serial
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QApplication
 import pyqtgraph as pg
 from User_interface import *
 import ardcomm
 
-msg_co = "Photo_co"		#message sent to arduino to start communication
-msg_ok = "Photo_ok"		#message sent back to pc from arduino
-msg_st = "Photo_st"		#Signal from pc confirming sequence start
-msg_ha = "Photo_ha"		#Signal from pc asking spectrometer halt
+#message sent to arduino to start communication
+msg_co = 'Photo_co'.encode('utf-8')	
+
+#message sent back to pc from arduino
+msg_ok = 'Photo_ok'.encode('utf-8')
+
+#Signal from pc confirming sequence start
+msg_st = 'Photo_st'.encode('utf-8')
+
+#Signal from pc asking spectrometer halt
+msg_ha = 'Photo_ha'.encode('utf-8')
 
 #Baudrate for arduino communication: (115200 is the maximum brate that still works fine with th Philco netbooks from Learning Physics Lab and gives resolution of 1 ms. For a dual core desktop, brates until 460800 works fine and gives resolution of 300 us)
 brate = 115200
@@ -41,21 +50,22 @@ chc.append((128,128,0))		#channel color 5
 chc.append((128,0,128))		#channel color 6
 
 #Generic alert message class
-class Alertparam(QtGui.QDialog):
+class Alertparam(QtWidgets.QDialog):
 	def __init__(self, msg):
 		super(Alertparam, self).__init__()
 
-		msgBox = QtGui.QMessageBox()
+		msgBox = QtWidgets.QMessageBox()
 		msgBox.setText(msg)
-		msgBox.addButton(QtGui.QPushButton('Ok'), QtGui.QMessageBox.YesRole)
-		#msgBox.addButton(QtGui.QPushButton('Reject'), QtGui.QMessageBox.NoRole)
-		#msgBox.addButton(QtGui.QPushButton('Cancel'), QtGui.QMessageBox.RejectRole)
-		ret = msgBox.exec_();
+		msgBox.addButton(QtWidgets.QPushButton('Ok'), QtWidgets.QMessageBox.YesRole)
+		#msgBox.addButton(QtGui.QPushButton('Reject'), QtGui.QMessageBox.NoRole) #depreciado
+		#msgBox.addButton(QtGui.QPushButton('Cancel'), QtGui.QMessageBox.RejectRole) #depreciado
+
+		ret = msgBox.exec_()
 
 
-class MyForm(QtGui.QDialog):
+class MyForm(QtWidgets.QDialog):
 	def __init__(self, parent=None):
-		QtGui.QWidget.__init__(self, parent)
+		QtWidgets.QWidget.__init__(self, parent)
 		self.ui = Ui_PyQtGate()
 		self.ui.setupUi(self)
 
@@ -67,54 +77,52 @@ class MyForm(QtGui.QDialog):
 		self.clearplots()
 
 		#Serial port actions:
-		QtCore.QObject.connect(self.ui.pB_connect, QtCore.SIGNAL('clicked()'), self.findport)
-		QtCore.QObject.connect(self.ui.pB_closeconnection, QtCore.SIGNAL('clicked()'), self.closeconnection)
-		QtCore.QObject.connect(self.ui.cB_port, QtCore.SIGNAL('activated(QString)'), self.setport)
+		self.ui.pB_connect.clicked.connect(lambda: self.findport())
+		self.ui.pB_closeconnection.clicked.connect(self.closeconnection)
+		self.ui.cB_port.activated[str].connect(self.setport)
 
 		#Time scan spin box actions:
-		QtCore.QObject.connect(self.ui.sP_channel_1, QtCore.SIGNAL('valueChanged(int)'), lambda: self.timescan(1))
-		QtCore.QObject.connect(self.ui.sP_channel_2, QtCore.SIGNAL('valueChanged(int)'), lambda: self.timescan(2))
-		QtCore.QObject.connect(self.ui.sP_channel_3, QtCore.SIGNAL('valueChanged(int)'), lambda: self.timescan(3))
-		QtCore.QObject.connect(self.ui.sP_channel_4, QtCore.SIGNAL('valueChanged(int)'), lambda: self.timescan(4))
-		QtCore.QObject.connect(self.ui.sP_channel_5, QtCore.SIGNAL('valueChanged(int)'), lambda: self.timescan(5))
-		QtCore.QObject.connect(self.ui.sP_channel_6, QtCore.SIGNAL('valueChanged(int)'), lambda: self.timescan(6))
-		QtCore.QObject.connect(self.ui.pB_timetable, QtCore.SIGNAL('clicked()'), self.timetable)
+		self.ui.sP_channel_1.valueChanged.connect(lambda: self.timescan(1))
+		self.ui.sP_channel_2.valueChanged.connect(lambda: self.timescan(2))
+		self.ui.sP_channel_3.valueChanged.connect(lambda: self.timescan(3))
+		self.ui.sP_channel_4.valueChanged.connect(lambda: self.timescan(4))
+		self.ui.sP_channel_5.valueChanged.connect(lambda: self.timescan(5))
+		self.ui.sP_channel_6.valueChanged.connect(lambda: self.timescan(6))
+		self.ui.pB_timetable.clicked.connect(self.timetable)
 
-		#Reference level slider actions:
-		QtCore.QObject.connect(self.ui.vS_channel_1, QtCore.SIGNAL('valueChanged(int)'), self.sliderreference)
-		QtCore.QObject.connect(self.ui.vS_channel_2, QtCore.SIGNAL('valueChanged(int)'), self.sliderreference)
-		QtCore.QObject.connect(self.ui.vS_channel_3, QtCore.SIGNAL('valueChanged(int)'), self.sliderreference)
-		QtCore.QObject.connect(self.ui.vS_channel_4, QtCore.SIGNAL('valueChanged(int)'), self.sliderreference)
-		QtCore.QObject.connect(self.ui.vS_channel_5, QtCore.SIGNAL('valueChanged(int)'), self.sliderreference)
-		QtCore.QObject.connect(self.ui.vS_channel_6, QtCore.SIGNAL('valueChanged(int)'), self.sliderreference)
+		# Conexões para os sliders (valueChanged)
+		self.ui.vS_channel_1.valueChanged.connect(self.sliderreference)
+		self.ui.vS_channel_2.valueChanged.connect(self.sliderreference)
+		self.ui.vS_channel_3.valueChanged.connect(self.sliderreference)
+		self.ui.vS_channel_4.valueChanged.connect(self.sliderreference)
+		self.ui.vS_channel_5.valueChanged.connect(self.sliderreference)
+		self.ui.vS_channel_6.valueChanged.connect(self.sliderreference)
 
-		#Reference level text actions:
-		QtCore.QObject.connect(self.ui.lE_channel_1, QtCore.SIGNAL('editingFinished()'), self.textreference)
-		QtCore.QObject.connect(self.ui.lE_channel_2, QtCore.SIGNAL('editingFinished()'), self.textreference)
-		QtCore.QObject.connect(self.ui.lE_channel_3, QtCore.SIGNAL('editingFinished()'), self.textreference)
-		QtCore.QObject.connect(self.ui.lE_channel_4, QtCore.SIGNAL('editingFinished()'), self.textreference)
-		QtCore.QObject.connect(self.ui.lE_channel_5, QtCore.SIGNAL('editingFinished()'), self.textreference)
-		QtCore.QObject.connect(self.ui.lE_channel_6, QtCore.SIGNAL('editingFinished()'), self.textreference)
+		# Conexões para os campos de texto (editingFinished)
+		self.ui.lE_channel_1.editingFinished.connect(self.textreference)
+		self.ui.lE_channel_2.editingFinished.connect(self.textreference)
+		self.ui.lE_channel_3.editingFinished.connect(self.textreference)
+		self.ui.lE_channel_4.editingFinished.connect(self.textreference)
+		self.ui.lE_channel_5.editingFinished.connect(self.textreference)
+		self.ui.lE_channel_6.editingFinished.connect(self.textreference)
 
-		#Constrain action:
-		QtCore.QObject.connect(self.ui.cB_constrain, QtCore.SIGNAL('stateChanged(int)'), self.textreference)
+		# Conexão para a caixa de seleção (stateChanged)
+		self.ui.cB_constrain.stateChanged.connect(self.textreference)
 
-		#Start sequence actions:
-		QtCore.QObject.connect(self.ui.pB_startacq, QtCore.SIGNAL('clicked()'), self.startacq)
+		# Conexões para os botões (clicked)
+		self.ui.pB_startacq.clicked.connect(self.startacq)
 		self.ui.pB_startacq.setStyleSheet("color: white; background-color: green;")
+		self.ui.pB_save.clicked.connect(self.SaveFile)
+		self.ui.pB_load.clicked.connect(self.LoadFile)
+		self.ui.pB_savetime.clicked.connect(self.SaveFileTime)
 
-		#File handling actions:
-		QtCore.QObject.connect(self.ui.pB_save, QtCore.SIGNAL('clicked()'), self.SaveFile)
-		QtCore.QObject.connect(self.ui.pB_load, QtCore.SIGNAL('clicked()'), self.LoadFile)
-		QtCore.QObject.connect(self.ui.pB_savetime, QtCore.SIGNAL('clicked()'), self.SaveFileTime)
-
-		#Plot channels enable actions:
-		QtCore.QObject.connect(self.ui.cB_channel_1, QtCore.SIGNAL('clicked()'), self.plotdata)
-		QtCore.QObject.connect(self.ui.cB_channel_2, QtCore.SIGNAL('clicked()'), self.plotdata)
-		QtCore.QObject.connect(self.ui.cB_channel_3, QtCore.SIGNAL('clicked()'), self.plotdata)
-		QtCore.QObject.connect(self.ui.cB_channel_4, QtCore.SIGNAL('clicked()'), self.plotdata)
-		QtCore.QObject.connect(self.ui.cB_channel_5, QtCore.SIGNAL('clicked()'), self.plotdata)
-		QtCore.QObject.connect(self.ui.cB_channel_6, QtCore.SIGNAL('clicked()'), self.plotdata)
+		# Conexões para as caixas de seleção dos canais (clicked)
+		self.ui.cB_channel_1.clicked.connect(self.plotdata)
+		self.ui.cB_channel_2.clicked.connect(self.plotdata)
+		self.ui.cB_channel_3.clicked.connect(self.plotdata)
+		self.ui.cB_channel_4.clicked.connect(self.plotdata)
+		self.ui.cB_channel_5.clicked.connect(self.plotdata)
+		self.ui.cB_channel_6.clicked.connect(self.plotdata)
 
 		#Place pictures in the About page:
 		#self.ui.l_ufscar.setGeometry(10, 10, 400, 100)
@@ -134,7 +142,7 @@ class MyForm(QtGui.QDialog):
 		global msg_co, msg_ok, sport, brate, echo
 		
 		self.ui.l_commstatus.setText("Iniciando comunicacao com Photogate Shield...")
-		qApp.processEvents()	#used to transmit instructions (l_status in this case) to the window application outside the function
+		QApplication.processEvents()	#used to transmit instructions (l_status in this case) to the window application outside the function
 		echo = ardcomm.arduino_echo(msg_co, len(msg_ok), brate)
 		if echo[0] == msg_ok :
 			port = echo[1]
@@ -166,7 +174,7 @@ class MyForm(QtGui.QDialog):
 
 		p = str(port)
 		self.ui.l_commstatus.setText("Iniciando comunicacao com Photogate Shield...")
-		qApp.processEvents()
+		QApplication.processEvents()
 		try:			
 			sport = serial.Serial(p, brate, timeout=1)
 			time.sleep(2.0)
@@ -566,13 +574,16 @@ class MyForm(QtGui.QDialog):
 				#Send delay value to Arduino:
 				a = d//256
 				b = d%256
-				sport.write(chr(a))
-				sport.write(chr(b))
+				
+				a = bytes([a])
+				b = bytes([b])
+				sport.write(a)
+				sport.write(b)
 
 				self.ui.l_mostrador.setText("rodando...")
 				self.ui.pB_startacq.setText("Gravando")
 				self.ui.pB_startacq.setStyleSheet("color: white; background-color: red;")
-				qApp.processEvents()
+				QApplication.processEvents()
 
 				data = [[],[],[],[],[],[],[]]
 
@@ -583,20 +594,20 @@ class MyForm(QtGui.QDialog):
 
 					#Get the level values for the 6 channels:
 					for i in range(6):
-						a0 = ord(str(sport.read()))
-						a1 = ord(str(sport.read()))
+						a0 = ord(sport.read(1))
+						a1 = ord(sport.read(1))
 						r = a0 + a1*256			#converts a word = 2 bytes into a decimal
 						data[i+1].append(r)
 				
 					#Get the time values:
-					a0 = ord(str(sport.read()))
-					a1 = ord(str(sport.read()))
-					a2 = ord(str(sport.read()))
-					a3 = ord(str(sport.read()))
+					a0 = ord(sport.read(1))
+					a1 = ord(sport.read(1))
+					a2 = ord(sport.read(1))
+					a3 = ord(sport.read(1))
 					r = a0 + a1*256 + a2*65536 + a3*16777216	#converts a double word = 4 bytes into a decimal
 					data[0].append(r*1e-6)
 
-					qApp.processEvents()
+					QApplication.processEvents()
 
 				#sport.flushInput()
 				#sport.flushOutput()
@@ -626,7 +637,7 @@ class MyForm(QtGui.QDialog):
 
 		if len(data[0]) > 2:
 
-			filename = QtGui.QFileDialog.getSaveFileName(self, 'Salvar formas de onda', '.')
+			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Salvar formas de onda', '.')
 			fname = open(filename, 'w')				#Signal data
 
 			fdisp = filename.split("/")
@@ -654,7 +665,7 @@ class MyForm(QtGui.QDialog):
 
 		global data, fdisp
 
-		filename = QtGui.QFileDialog.getOpenFileName(self, 'Ler formas de onda', '~')
+		filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Ler formas de onda', '~')
 		fname = open(filename, 'r')			#Signal data
 
 		fdisp = filename.split("/")
@@ -692,7 +703,7 @@ class MyForm(QtGui.QDialog):
 
 		if dtime != []:
 
-			filename = QtGui.QFileDialog.getSaveFileName(self, 'Salvar tabela de tempos', '.')
+			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Salvar tabela de tempos', '.')
 			fname = open(filename, 'w')				#Signal data
 
 			Nrow = len(dtime)
@@ -711,7 +722,7 @@ class MyForm(QtGui.QDialog):
 
 
 if __name__ == "__main__":
-	app = QtGui.QApplication(sys.argv)
+	app = QApplication(sys.argv)
 
 	myapp = MyForm()
 	myapp.show()
