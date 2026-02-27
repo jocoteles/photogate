@@ -1,5 +1,12 @@
 # photogate
 
+> ### ⚠️ DEPRECATED / LEGACY PROJECT
+> This version (PyQt/Serial) is no longer maintained. The project has evolved into a modern architecture using **ESP32**, **Web Bluetooth**, and **PWA**.
+> 
+> 👉 **Access the updated version here: [PhotoWebBluetooth32 (PWB32)](https://github.com/jocoteles/PhotoWebBluetooth32)**
+---
+## About the original project
+
 Photogate for Learning Physics Labs has the purpose to develop and deploy the hardware and software system used in the learning physics laboratories of the "Centro de Ciências Agrárias" in the "Universidade Federal de São Carlos" (CCA-UFSCar). The project uses the Arduino platform for signal acquisition.
 
 The software part is composed of two codes. The first one, PyQtGate is developed in PyQt and corresponds to the graphical user interface that runs in a laptop or desktop computer. The second one, APGate, is the code to be uploaded in the Arduino, written in C, that will communicate with the PyQtGate code in order to transfer the photogate signals.
