@@ -1,7 +1,7 @@
 # photogate
 
 > ### ⚠️ DEPRECATED / LEGACY PROJECT
-> This version (PyQt/Serial) is no longer maintained. The project has evolved into a modern architecture using **ESP32**, **Web Bluetooth**, and **PWA**.
+> This version (PyQt/Serial) is no longer maintained. It was the standard photogate solution for Physics Teaching Labs at [CCA/UFSCar](https://www.cca.ufscar.br/) for 8 years (2017–2025) and has evolved into a modern architecture using **ESP32**, **Web Bluetooth**, and **PWA**.
 > 
 > 👉 **Access the updated version here: [PhotoWebBluetooth32 (PWB32)](https://github.com/jocoteles/PhotoWebBluetooth32) and [photogate-esp32](https://github.com/felipericobello/photogate-esp32)**
 ---
