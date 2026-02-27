@@ -3,7 +3,7 @@
 > ### ⚠️ DEPRECATED / LEGACY PROJECT
 > This version (PyQt/Serial) is no longer maintained. The project has evolved into a modern architecture using **ESP32**, **Web Bluetooth**, and **PWA**.
 > 
-> 👉 **Access the updated version here: [PhotoWebBluetooth32 (PWB32)](https://github.com/jocoteles/PhotoWebBluetooth32)**
+> 👉 **Access the updated version here: [PhotoWebBluetooth32 (PWB32)](https://github.com/jocoteles/PhotoWebBluetooth32) and [photogate-esp32](https://github.com/felipericobello/photogate-esp32)**
 ---
 ## About the original project
 
